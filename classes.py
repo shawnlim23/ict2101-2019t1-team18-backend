@@ -5,7 +5,7 @@ class User:
         password,
         salt="",
         name="",
-        birthdate = "",
+        birthdate="",
         sex="Not Known",
         commute_method="",
         userID=None,
@@ -48,4 +48,16 @@ class Canvas:
         self.title = title
         self.description = description
         self.editable = editable
+        self.active = active
+
+
+class Comment:
+    def __init__(
+        self, userID, canvasID, commentID=None, text="", timestamp="", active=True
+    ):
+        self.userID = userID
+        self.canvasID = canvasID
+        self.commentID = commentID
+        self.text = text
+        self.timestamp = timestamp
         self.active = active

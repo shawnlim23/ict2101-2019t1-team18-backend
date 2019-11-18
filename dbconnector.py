@@ -30,7 +30,7 @@ def register(user):
     try:
         conn = conn_open()
         with conn.cursor() as cursor:
-            sql = "INSERT INTO `user`(`email`, `password`, `salt`, `name`, `age`, `sex`, `commute_method`) VALUES (%s, %s, %s, %s, %s, %s, %s);"
+            sql = "INSERT INTO `user`(`email`, `password`, `salt`, `name`, `birthdate`, `sex`, `commute_method`) VALUES (%s, %s, %s, %s, %s, %s, %s);"
             result = cursor.execute(
                 sql,
                 (
@@ -38,7 +38,7 @@ def register(user):
                     user.password,
                     user.salt,
                     user.name,
-                    user.age,
+                    user.birthdate,
                     user.sex,
                     user.commute_method,
                 ),
@@ -141,6 +141,28 @@ def get_user(userID):
     finally:
         conn.close()
         return user
+
+
+def update_user(user):
+    try:
+        print(user)
+        conn = conn_open()
+        with conn.cursor() as cursor:
+            sql = "UPDATE `user` SET `birthdate` = %s, `commute_method` = %s, `name` = %s, `sex` = %s WHERE `userID` = %s;"
+            result = cursor.execute(
+                sql,
+                (
+                    user["birthdate"],
+                    user["commute_method"],
+                    user["name"],
+                    user["sex"],
+                    user["userID"],
+                ),
+            )
+    finally:
+        conn.commit()
+        conn.close()
+        return result
 
 
 # ========== LANDMARKS ==========
@@ -254,7 +276,7 @@ def get_canvases_by_landmark(placeID):
         canvases = []
         with conn.cursor() as cursor:
             sql = "SELECT canvasID FROM activeCanvases WHERE placeID = %s;"
-            if cursor.execute(sql,(placeID)) != 0:
+            if cursor.execute(sql, (placeID)) != 0:
                 result = cursor.fetchall()
                 for row in result:
                     canvases.append(row["canvasID"])

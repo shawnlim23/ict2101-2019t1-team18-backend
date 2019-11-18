@@ -2,11 +2,10 @@ CREATE OR REPLACE VIEW activeUsers AS
 SELECT
   `userID`,
   `name`,
-  `age`,
-  `S`.`value` as 'sex',
+  `birthdate`,
+  `sex`,
   `commute_method`
-FROM user U
-join sex S ON U.sex = S.sexID
+FROM user
 WHERE
   `active` = True;
 

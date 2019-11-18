@@ -78,14 +78,14 @@ def register():
         if "name" in jason:
             user.name = jason["name"]
 
-        if "age" in jason:
-            user.age = int(jason["age"])
+        if "birthdate" in jason:
+            user.birthdate = int(jason["birthdate"])
 
         if "sex" in jason:
             user.sex = int(jason["sex"])
 
-        if "commuteMethod" in jason:
-            user.commute_method = int(jason["commuteMethod"])
+        if "commute_method" in jason:
+            user.commute_method = int(jason["commute_method"])
 
         # Register User & submit
         db.register(user)
@@ -184,9 +184,43 @@ def getUsers():
 
 
 # get one user
-@app.route("/amble/user/<string:uID>")
+@app.route("/amble/user/<string:uID>", methods=["GET", "PUT"])
 def getUser(uID):
-    return jsonify(db.get_user(uID))
+    result = {"result": "error", "error": ""}
+    if request.method == "GET":
+        return jsonify(db.get_user(uID))
+
+    elif request.method == "PUT":
+        user = db.get_user(uID)
+        print(user)
+        if user == {}:
+            result["error"] = "invalid userID"
+            return jsonify(result)
+
+        if "json" not in request.form:
+            result["error"] = "no json in request"
+            return jsonify(result)
+        jason = json.loads(request.form["json"])
+
+        #update thr dict with latest information
+        if "birthdate" in jason:
+            user["birthdate"] = jason["birthdate"]
+
+        if "commute_method" in jason:
+            user["commute_method"] = jason["commute_method"]
+
+        if "name" in jason:
+            user["name"] = jason["name"]
+
+        if "sex" in jason:
+            user["sex"] = jason["sex"]
+        # update the stored database with userdata
+        db.update_user(user)
+        return jsonify(db.get_user(uID))
+
+    else:
+        result["error"] = "incorrect request method"
+        return jsonify(result)
 
 
 # ========== LANDMARKS ==========

@@ -5,9 +5,9 @@ class User:
         password,
         salt="",
         name="",
-        age=-1,
-        sex=0,
-        commute_method=0,
+        birthdate = "",
+        sex="Not Known",
+        commute_method="",
         userID=None,
         active=True,
     ):
@@ -15,7 +15,7 @@ class User:
         self.password = password
         self.salt = salt
         self.name = name
-        self.age = age
+        self.birthdate = birthdate
         # ISO/IEC 5218: 0 = "Not Known", 1 = "male", 2 = "female", 9 = "N.A."
         self.sex = sex
         self.commute_method = commute_method

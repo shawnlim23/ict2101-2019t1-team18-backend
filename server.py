@@ -192,6 +192,7 @@ def getUser(uID):
 
     elif request.method == "PUT":
         user = db.get_user(uID)
+        print(user)
         if user == {}:
             result["error"] = "invalid userID"
             return jsonify(result)
@@ -201,7 +202,7 @@ def getUser(uID):
             return jsonify(result)
         jason = json.loads(request.form["json"])
 
-        # update thr dict with latest information
+        #update thr dict with latest information
         if "birthdate" in jason:
             user["birthdate"] = jason["birthdate"]
 
@@ -396,7 +397,6 @@ def getComment(commentID):
     else:
         result["error"] = "incorrect request method"
         return jsonify(result)
-
 
 # ========== MISC ==========
 @app.after_request

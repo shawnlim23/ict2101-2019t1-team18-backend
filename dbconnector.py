@@ -145,6 +145,7 @@ def get_user(userID):
 
 def update_user(user):
     try:
+        print(user)
         conn = conn_open()
         with conn.cursor() as cursor:
             sql = "UPDATE `user` SET `birthdate` = %s, `commute_method` = %s, `name` = %s, `sex` = %s WHERE `userID` = %s;"
@@ -283,49 +284,6 @@ def get_canvases_by_landmark(placeID):
     finally:
         conn.close()
         return canvases
-
-
-# ========== TOKENS ==========
-def create_comment(comment):
-    try:
-        conn = conn_open()
-        with conn.cursor() as cursor:
-            sql = "INSERT INTO `comment`(`userID`, `canvasID`, `text`, `timestamp`) VALUES (%s, %s, %s, %s);"
-            cursor.execute(
-                sql, (comment.userID, comment.canvasID, comment.text, comment.timestamp)
-            )
-            result = cursor.lastrowid
-    finally:
-        conn.commit()
-        conn.close()
-        return result
-
-
-def get_comment(commentID):
-    try:
-        conn = conn_open()
-        comment = {}
-        with conn.cursor() as cursor:
-            sql = "SELECT * FROM activeComments WHERE commentID = %s;"
-            if cursor.execute(sql, (commentID)) != 0:
-                comment = cursor.fetchone()
-    finally:
-        conn.close()
-        return comment
-
-
-def update_comment(comment):
-    try:
-        conn = conn_open()
-        with conn.cursor() as cursor:
-            sql = "UPDATE `comment` SET `text` = %s, `timestamp` = %s, `active` = %s;"
-            result = cursor.execute(
-                sql, (comment["text"], comment["timestamp"], comment["active"])
-            )
-    finally:
-        conn.commit()
-        conn.close()
-        return result
 
 
 # ========== TOKENS ==========

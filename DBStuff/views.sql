@@ -1,5 +1,4 @@
-CREATE
-OR REPLACE VIEW activeUsers AS
+CREATE OR REPLACE VIEW activeUsers AS
 SELECT
   `userID`,
   `name`,
@@ -9,8 +8,8 @@ SELECT
 FROM user
 WHERE
   `active` = True;
-CREATE
-  OR REPLACE VIEW activeLandmarks AS
+
+CREATE OR REPLACE VIEW activeLandmarks AS
 SELECT
   `placeID`,
   `name`,
@@ -18,8 +17,8 @@ SELECT
 FROM `landmark`
 WHERE
   `active` = True;
-CREATE
-  OR REPLACE VIEW activeCanvases AS
+
+CREATE OR REPLACE VIEW activeCanvases AS
 SELECT
   `canvasID`,
   `userID`,
@@ -29,15 +28,4 @@ SELECT
   `editable`
 FROM canvas
 WHERE
-  `active` = True;
-CREATE
-  OR REPLACE VIEW activeComments AS
-SELECT
-  `commentID`,
-  `userID`,
-  `canvasID`,
-  `text`,
-  `timestamp`
-FROM comment
-WHERE
-  `active` = True;
+ `active` = True;

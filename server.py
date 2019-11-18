@@ -359,7 +359,7 @@ def createComment():
 
         commentID = db.create_comment(comment)
 
-        return jsonify(commentID)
+        return jsonify(db.get_comment(commentID))
 
 
 @app.route("/amble/comment/<string:commentID>", methods=["GET", "PUT"])

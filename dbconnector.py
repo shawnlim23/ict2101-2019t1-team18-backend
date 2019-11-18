@@ -76,7 +76,7 @@ def logout(uidtoken):
     return result
 
 
-# ========== MISCELANEOUS ==========
+# ========== LOGIN ==========
 def check_email_exists(email):
     try:
         conn = conn_open()
@@ -215,9 +215,7 @@ def create_canvas(canvas):
                     canvas.editable,
                 ),
             )
-            print("test")
             result = cursor.lastrowid
-            print(result)
     finally:
         conn.commit()
         conn.close()
@@ -282,8 +280,6 @@ def add_token(userID, token):
 def check_token(uidtoken):
     result = False
     userID, token = uidtoken.split("/")
-    print(userID)
-    print(token)
     try:
         conn = conn_open()
         with conn.cursor() as cursor:
@@ -291,7 +287,6 @@ def check_token(uidtoken):
             # If uID exists -> get token of uID
             if cursor.execute(sql, (userID)) == 1:
                 server_token = cursor.fetchone()
-                print(server_token)
                 # if token == server_token or NULL -> return True
                 if token == server_token["token"] or server_token["token"] == None:
                     result = True
@@ -302,21 +297,3 @@ def check_token(uidtoken):
 
 if __name__ == "__main__":
     pass
-    #print(get_salt("weh"))
-    #print(get_canvases_by_landmark(1))
-
-
-    # print(get_users())
-    # print(get_salt("uwu@owo.com"))
-    # print(check_email("owo@uwu.com"))
-    # user = classes.User("uwu@uwu.com", "owau")
-    # register(user)
-    # try:
-    #    conn = conn_open()
-    #    with conn.cursor() as cursor:
-    #        sql = "SELECT * FROM activeUsers WHERE userID = %s;"
-    #        cursor.execute(sql, (6))
-    #        user = cursor.fetchone()
-    # finally:
-    #    conn.close()
-    #    print(user)

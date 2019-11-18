@@ -18,6 +18,7 @@ app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
 def index():
     return "Henlo!"
 
+
 @app.route("/amble")
 def hello():
     return jsonify({"result": "success", "return": "Hello Amble"})
@@ -36,9 +37,9 @@ def funcname(imageName):
 @app.route("/amble/auth/register", methods=["POST"])
 def register():
     # requires POST method
+    result = {"result": "error", "error": ""}
     if request.method == "POST":
-        result = {"result": "error", "error": ""}
-        # print(request.form["json"])
+
         # ensure json has been posted
         if "json" not in request.form:
             result["error"] = "no json in request"
@@ -72,8 +73,8 @@ def register():
         # convert password to hash
         password = hashlib.sha256((pwd + salt).encode("utf-8")).hexdigest()
 
+        # Create User & add optional fields
         user = classes.User(email, password, salt)
-
         if "name" in jason:
             user.name = jason["name"]
 
@@ -86,24 +87,29 @@ def register():
         if "commuteMethod" in jason:
             user.commute_method = int(jason["commuteMethod"])
 
+        # Register User & submit
         db.register(user)
         result = {"result": "success"}
+        return jsonify(result)
+
+    else:
+        result["error"] = "incorrect request method"
         return jsonify(result)
 
 
 # Login
 @app.route("/amble/auth/login", methods=["POST"])
 def login():
-    # print("test")
     result = {"result": "error", "error": ""}
-
+    # Require Post method
     if request.method == "POST":
-        # convert json from form into dict
+        # Require json
         if "json" not in request.form:
             result["error"] = "no json in request"
             return jsonify(result)
         jason = json.loads(request.form["json"])
 
+        # Get email from
         if "email" not in jason:
             result["error"] = "no email in json"
             return jsonify(result)
@@ -115,19 +121,19 @@ def login():
             return jsonify(result)
         pwd = jason["password"]
 
-        # convert password to hash
-        deets = db.get_salt(email)
+        deets = db.get_salt(email)  # get user's details from email
         if deets == None:  # if returns None means no user exists
             result["error"] = "incorrect email/password"
             return jsonify(result)
+        # convert password to hash
         password = hashlib.sha256((pwd + deets["salt"]).encode("utf-8")).hexdigest()
 
-        # authentication pw doesn't match and email exists
+        # return if hashedpassword doesn't match stored hash
         if password != deets["password"]:
             result["error"] = "incorrect email/password"
             return jsonify(result)
 
-        # generate token and return user
+        # generate token and return user w/ token
         token = hashlib.sha256(
             datetime.now().strftime("%Y-%b-%a %H:%M:%S").encode("utf-8")
         ).hexdigest()
@@ -136,28 +142,37 @@ def login():
         user["token"] = str(deets["userID"]) + "/" + token
         return jsonify({"result": "success", "return": user})
 
+    else:
+        result["error"] = "incorrect request method"
+        return jsonify(result)
+
 
 # logout
 @app.route("/amble/auth/logout", methods=["POST"])
 def logout():
+    result = {"result": "error", "error": ""}
     if request.method == "POST":
-        result = {"result": "error", "error": ""}
 
+        # return json error
         if "json" not in request.form:
             result["error"] = "no json in request"
             return jsonify(result)
         jason = json.loads(request.form["json"])
 
+        # return if json doesn't exist
         if "token" not in jason:
             result["error"] = "no token in json"
             return jsonify(result)
         token = jason["token"]
-
+        # return result based on if token matches the stored token
         if db.logout(token):
             return jsonify({"result": "success"})
         else:
             result["error"] = "invalid token"
             return jsonify(result)
+    else:
+        result["error"] = "incorrect request method"
+        return jsonify(result)
 
 
 # ========== USERS ==========
@@ -195,9 +210,9 @@ def getLandmark(placeID):
 # Create Canvas
 @app.route("/amble/canvas/createCanvas", methods=["POST"])
 def createCanvas():
+    result = {"result": "error", "error": ""}
     if request.method == "POST":
-        result = {"result": "error", "error": ""}
-        # print(request.form["json"])
+
         # ensure json has been posted
         if "json" not in request.form:
             result["error"] = "no json in request"
@@ -216,10 +231,12 @@ def createCanvas():
             return jsonify(result)
         placeID = jason["placeID"]
 
+        # check if file is in requests
         if "file" not in request.files:
             result["error"] = "invalid file"
             return jsonify(result)
-        print("creating canvas")
+
+        # create canvas and add optional args
         canvas = classes.Canvas(userID, placeID)
         if "title" in jason:
             canvas.title = jason["title"]
@@ -230,14 +247,14 @@ def createCanvas():
         if "editable" in jason:
             canvas.editable = jason["editable"]
 
-        print("just about to create canvas")
         canvasID = db.create_canvas(canvas)
         file = request.files["file"]
         file.save(os.path.join("./static/images/canvas/", str(canvasID) + ".png"))
 
         return jsonify(db.get_canvas(str(canvasID)))
     else:
-        return
+        result["error"] = "incorrect request method"
+        return jsonify(result)
 
 
 # getAllCanvases
@@ -249,15 +266,20 @@ def getCanvases():
 # get a single canvas
 @app.route("/amble/canvas/<string:canvasID>", methods=["GET", "PUT"])
 def getCanvas(canvasID):
+    result = {"result": "error", "error": ""}
     if request.method == "GET":
         return jsonify(db.get_canvas(canvasID))
     elif request.method == "PUT":
         jason = request.form["json"]
+    else:
+        result["error"] = "incorrect request method"
+        return jsonify(result)
 
 
 # get or update canvas image by put
 @app.route("/amble/canvas/image/<string:canvasID>", methods=["GET", "PUT"])
 def getCanvasImage(canvasID):
+    result = {"result": "error", "error": ""}
     if request.method == "GET":
         render = render_template("image.html", name=(canvasID + ".png"))
 
@@ -266,6 +288,9 @@ def getCanvasImage(canvasID):
         file = request.files["file"]
         file.save(os.path.join("./static/images/canvas", canvasID + ".png"))
         return jsonify({"result": "success"})
+    else:
+        result["error"] = "incorrect request method"
+        return jsonify(result)
 
 
 # ========== COMMENTS ==========

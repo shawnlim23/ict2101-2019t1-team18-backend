@@ -192,6 +192,7 @@ def getUser(uID):
 
     elif request.method == "PUT":
         user = db.get_user(uID)
+        print(user)
         if user == {}:
             result["error"] = "invalid userID"
             return jsonify(result)
@@ -201,7 +202,7 @@ def getUser(uID):
             return jsonify(result)
         jason = json.loads(request.form["json"])
 
-        # update thr dict with latest information
+        #update thr dict with latest information
         if "birthdate" in jason:
             user["birthdate"] = jason["birthdate"]
 
@@ -327,75 +328,6 @@ def getCanvasImage(canvasID):
 
 
 # ========== COMMENTS ==========
-@app.route("/amble/comment/createComment", methods=["POST"])
-def createComment():
-    result = {"result": "error", "error": ""}
-    if request.method == "POST":
-
-        # ensure json has been posted
-        if "json" not in request.form:
-            result["error"] = "no json in request"
-            return jsonify(result)
-        jason = json.loads(request.form["json"])
-
-        # check if userID exists
-        if not ("userID" in jason and db.check_user_exists(jason["userID"])):
-            result["error"] = "invalid userID"
-            return jsonify(result)
-        userID = str(jason["userID"])
-
-        # check if canvasID is in json and canvas exists
-        if not ("canvasID" in jason and db.check_canvas_exists(jason["canvasID"])):
-            result["error"] = "invalid canvasID"
-            return jsonify(result)
-        canvasID = jason["canvasID"]
-
-        comment = classes.Comment(userID, canvasID)
-        if "text" in jason:
-            comment.text = jason["text"]
-
-        if "timestamp" in jason:
-            comment.timestamp = jason["timestamp"]
-
-        commentID = db.create_comment(comment)
-
-        return jsonify(commentID)
-
-
-@app.route("/amble/comment/<string:commentID>", methods=["GET", "PUT"])
-def getComment(commentID):
-    result = {"result": "error", "error": ""}
-    if request.method == "GET":
-        return jsonify(db.get_comment(commentID))
-
-    elif request.method == "PUT":
-        comment = db.get_comment(commentID)
-        if comment == {}:
-            result["error"] = "invalid commentID"
-            return jsonify(result)
-
-        if "json" not in request.form:
-            result["error"] = "no json in request"
-            return jsonify(result)
-        jason = json.loads(request.form["json"])
-
-        # update thr dict with latest information
-        if "text" in jason:
-            comment["text"] = jason["text"]
-
-        if "timestamp" in jason:
-            comment["timestamp"] = jason["timestamp"]
-
-        if "active" in jason:
-            comment["active"] = jason["active"]
-        # update the stored database with commentdata
-        db.update_comment(comment)
-        return jsonify(db.get_comment(commentID))
-
-    else:
-        result["error"] = "incorrect request method"
-        return jsonify(result)
-
 
 # ========== MISC ==========
 @app.after_request

@@ -385,7 +385,8 @@ def getComment(commentID):
 
         if "timestamp" in jason:
             comment["timestamp"] = jason["timestamp"]
-
+        
+        comment["active"] = True
         if "active" in jason:
             comment["active"] = jason["active"]
         # update the stored database with commentdata

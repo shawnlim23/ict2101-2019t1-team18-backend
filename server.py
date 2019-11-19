@@ -82,13 +82,13 @@ def register():
             user.name = jason["name"]
 
         if "birthdate" in jason:
-            user.birthdate = int(jason["birthdate"])
+            user.birthdate = jason["birthdate"]
 
         if "sex" in jason:
-            user.sex = int(jason["sex"])
+            user.sex = jason["sex"]
 
         if "commute_method" in jason:
-            user.commute_method = int(jason["commute_method"])
+            user.commute_method = jason["commute_method"]
 
         # Register User & submit
         db.register(user)

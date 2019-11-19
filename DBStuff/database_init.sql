@@ -39,7 +39,7 @@ CREATE TABLE canvas (
   CONSTRAINT Canvas_userID_FK FOREIGN KEY(userID) REFERENCES User(userID),
   CONSTRAINT Canvas_placeID_FK FOREIGN KEY(placeID) REFERENCES Landmark(placeID)
 );
-CREATE TABLE canvas_rating(
+CREATE TABLE canvas_rating (
   `canvas_ratingID` INT(8) UNSIGNED AUTO_INCREMENT NOT NULL,
   `canvasID` INT(8) UNSIGNED NOT NULL,
   `userID` INT(8) UNSIGNED NOT NULL,
@@ -52,7 +52,7 @@ CREATE TABLE comment (
   `userID` INT(8) UNSIGNED,
   `canvasID` INT(8) UNSIGNED,
   `text` VARCHAR(140),
-  `timestamp` DATETIME,
+  `timestamp` VARCHAR(30) DEFAULT "1970-01-01T00:00:00Z",
   `active` BOOLEAN DEFAULT 1,
   CONSTRAINT Comment_commentID_PK PRIMARY KEY(commentID),
   CONSTRAINT Comment_userID_FK FOREIGN KEY(userID) REFERENCES User(userID),

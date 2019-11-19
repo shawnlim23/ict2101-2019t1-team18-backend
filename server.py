@@ -41,10 +41,13 @@ def register():
     if request.method == "POST":
 
         # ensure json has been posted
-        if "json" not in request.form:
+        if request.json is not None:
+            jason = request.json
+        elif "json" in request.form:
+             jason = json.loads(request.form["json"])
+        else:
             result["error"] = "no json in request"
             return jsonify(result)
-        jason = json.loads(request.form["json"])
 
         # if email not in request return failure
         if "email" not in jason:
@@ -104,10 +107,13 @@ def login():
     # Require Post method
     if request.method == "POST":
         # Require json
-        if "json" not in request.form:
+        if request.json is not None:
+            jason = request.json
+        elif "json" in request.form:
+             jason = json.loads(request.form["json"])
+        else:
             result["error"] = "no json in request"
             return jsonify(result)
-        jason = json.loads(request.form["json"])
 
         # Get email from
         if "email" not in jason:
@@ -154,10 +160,13 @@ def logout():
     if request.method == "POST":
 
         # return json error
-        if "json" not in request.form:
+        if request.json is not None:
+            jason = request.json
+        elif "json" in request.form:
+             jason = json.loads(request.form["json"])
+        else:
             result["error"] = "no json in request"
             return jsonify(result)
-        jason = json.loads(request.form["json"])
 
         # return if json doesn't exist
         if "token" not in jason:
@@ -192,17 +201,19 @@ def getUser(uID):
 
     elif request.method == "PUT":
         user = db.get_user(uID)
-        print(user)
         if user == {}:
             result["error"] = "invalid userID"
             return jsonify(result)
 
-        if "json" not in request.form:
+        if request.json is not None:
+            jason = request.json
+        elif "json" in request.form:
+             jason = json.loads(request.form["json"])
+        else:
             result["error"] = "no json in request"
             return jsonify(result)
-        jason = json.loads(request.form["json"])
 
-        #update thr dict with latest information
+        # update the dict with latest information
         if "birthdate" in jason:
             user["birthdate"] = jason["birthdate"]
 
@@ -248,10 +259,13 @@ def createCanvas():
     if request.method == "POST":
 
         # ensure json has been posted
-        if "json" not in request.form:
+        if request.json is not None:
+            jason = request.json
+        elif "json" in request.form:
+             jason = json.loads(request.form["json"])
+        else:
             result["error"] = "no json in request"
             return jsonify(result)
-        jason = json.loads(request.form["json"])
 
         # check if landmark is invalid
         if not ("userID" in jason and db.check_user_exists(jason["userID"])):
@@ -334,10 +348,13 @@ def createComment():
     if request.method == "POST":
 
         # ensure json has been posted
-        if "json" not in request.form:
+        if request.json is not None:
+            jason = request.json
+        elif "json" in request.form:
+             jason = json.loads(request.form["json"])
+        else:
             result["error"] = "no json in request"
             return jsonify(result)
-        jason = json.loads(request.form["json"])
 
         # check if userID exists
         if not ("userID" in jason and db.check_user_exists(jason["userID"])):
@@ -375,10 +392,13 @@ def getComment(commentID):
             result["error"] = "invalid commentID"
             return jsonify(result)
 
-        if "json" not in request.form:
+        if request.json is not None:
+            jason = request.json
+        elif "json" in request.form:
+             jason = json.loads(request.form["json"])
+        else:
             result["error"] = "no json in request"
             return jsonify(result)
-        jason = json.loads(request.form["json"])
 
         # update thr dict with latest information
         if "text" in jason:
@@ -386,7 +406,7 @@ def getComment(commentID):
 
         if "timestamp" in jason:
             comment["timestamp"] = jason["timestamp"]
-        
+
         comment["active"] = True
         if "active" in jason:
             comment["active"] = jason["active"]
@@ -397,6 +417,7 @@ def getComment(commentID):
     else:
         result["error"] = "incorrect request method"
         return jsonify(result)
+
 
 # ========== MISC ==========
 @app.after_request
@@ -410,6 +431,16 @@ def add_header(r):
     r.headers["Expires"] = "0"
     r.headers["Cache-Control"] = "public, max-age=0"
     return r
+
+
+@app.before_request
+def before_req():
+    if request.method == "POST" or request.method == "PUT":
+        if request.json is not None:
+            print(request.json)
+        else:
+            print(request.form)
+        
 
 
 # ========== STARTUP ==========

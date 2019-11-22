@@ -65,7 +65,7 @@ def logout(uidtoken):
             userID = uidtoken.split("/")[0]
             conn = conn_open()
             with conn.cursor() as cursor:
-                sql = "UPDATE user SET token = NULL WHERE userID = %s"
+                sql = "UPDATE user SET token = NULL WHERE userID = %s;"
                 cursor.execute(sql, (userID))  # set result to True
                 conn.commit()
                 result = True
@@ -251,6 +251,8 @@ def get_canvases():
             sql = "SELECT * FROM activeCanvases;"
             if cursor.execute(sql) != 0:
                 canvases = cursor.fetchall()
+                for canvas in canvases:
+                    canvas["rating"] = get_canvas_rating(canvas["canvasID"])["rating"]
     finally:
         conn.close()
         return canvases
@@ -264,6 +266,7 @@ def get_canvas(canvasID):
             sql = "SELECT * FROM activeCanvases WHERE canvasID = %s;"
             if cursor.execute(sql, (canvasID)) != 0:
                 canvas = cursor.fetchone()
+                canvas["rating"] = get_canvas_rating(canvas["canvasID"])["rating"]
     finally:
         conn.close()
         return canvas
@@ -283,6 +286,93 @@ def get_canvases_by_landmark(placeID):
     finally:
         conn.close()
         return canvases
+
+
+def get_canvases_by_user(userID):
+    try:
+        conn = conn_open()
+        canvases = []
+        with conn.cursor() as cursor:
+            sql = "SELECT canvasID FROM activeCanvases WHERE userID = %s;"
+            if cursor.execute(sql, (userID)) != 0:
+                result = cursor.fetchall()
+                for row in result:
+                    canvases.append(row["canvasID"])
+
+    finally:
+        conn.close()
+        return canvases
+
+
+def update_canvas(canvas):
+    try:
+        conn = conn_open()
+        with conn.cursor() as cursor:
+            sql = "UPDATE `canvas` SET `title` = %s, `description` = %s, `editable` = %s WHERE `canvasID` = %s;"
+            result = cursor.execute(
+                sql,
+                (
+                    canvas["title"],
+                    canvas["description"],
+                    canvas["editable"],
+                    canvas["canvasID"],
+                ),
+            )
+    finally:
+        conn.commit()
+        conn.close()
+        return result
+
+
+# ========== CANVAS RATING ==========
+def get_canvas_rating(canvasID):
+    try:
+        result = -1
+        conn = conn_open()
+        with conn.cursor() as cursor:
+            sql = "SELECT rating FROM countRating WHERE canvasID = %s;"
+            if cursor.execute(sql, (canvasID)) != 0:
+                result = cursor.fetchone()
+    finally:
+        conn.close()
+        return result
+
+
+def check_rated(canvasID, userID):
+    try:
+        conn = conn_open()
+        result = -1
+        with conn.cursor() as cursor:
+            sql = "SELECT liked FROM canvas_rating WHERE canvasID = %s AND userID = %s;"
+            if cursor.execute(sql, (canvasID, userID)) != 0:
+                res = cursor.fetchone()
+                result = res["liked"]
+    finally:
+        conn.close()
+        return result
+
+
+def rate(canvasID, userID):
+    try:
+        conn = conn_open()
+        with conn.cursor() as cursor:
+            rated = check_rated(canvasID, userID)
+            if rated == -1:
+                sql = (
+                    "INSERT INTO `canvas_rating`(`canvasID`, `userID`) VALUES (%s, %s);"
+                )
+                cursor.execute(sql, (canvasID, userID))
+
+            else:
+                if rated == 1:
+                    sql = "UPDATE `canvas_rating` SET `liked` = %s WHERE `canvasID` = %s AND `userID` = %s"
+                    cursor.execute(sql, (0, canvasID, userID))
+                else:
+                    sql = "UPDATE `canvas_rating` SET `liked` = %s WHERE `canvasID` = %s AND `userID` = %s"
+                    cursor.execute(sql, (1, canvasID, userID))
+    finally:
+        conn.commit()
+        conn.close()
 
 
 # ========== COMMENTS ==========
@@ -318,9 +408,15 @@ def update_comment(comment):
     try:
         conn = conn_open()
         with conn.cursor() as cursor:
-            sql = "UPDATE `comment` SET `text` = %s, `timestamp` = %s, `active` = %s;"
+            sql = "UPDATE `comment` SET `text` = %s, `timestamp` = %s, `active` = %s WHERE `commentID` = %s;"
             result = cursor.execute(
-                sql, (comment["text"], comment["timestamp"], comment["active"])
+                sql,
+                (
+                    comment["text"],
+                    comment["timestamp"],
+                    comment["active"],
+                    comment["commentID"],
+                ),
             )
     finally:
         conn.commit()
@@ -360,4 +456,11 @@ def check_token(uidtoken):
 
 
 if __name__ == "__main__":
+    # print(get_canvas_rating(1))
+    #rate(1, 1)
+    #print(get_canvases())
+    # print(check_rated(1,1))
+
+    # canvas = get_canvas(1)
+    # update_canvas(canvas)
     pass

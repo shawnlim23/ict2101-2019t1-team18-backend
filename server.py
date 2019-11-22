@@ -44,7 +44,7 @@ def register():
         if request.json is not None:
             jason = request.json
         elif "json" in request.form:
-             jason = json.loads(request.form["json"])
+            jason = json.loads(request.form["json"])
         else:
             result["error"] = "no json in request"
             return jsonify(result)
@@ -110,7 +110,7 @@ def login():
         if request.json is not None:
             jason = request.json
         elif "json" in request.form:
-             jason = json.loads(request.form["json"])
+            jason = json.loads(request.form["json"])
         else:
             result["error"] = "no json in request"
             return jsonify(result)
@@ -163,7 +163,7 @@ def logout():
         if request.json is not None:
             jason = request.json
         elif "json" in request.form:
-             jason = json.loads(request.form["json"])
+            jason = json.loads(request.form["json"])
         else:
             result["error"] = "no json in request"
             return jsonify(result)
@@ -208,7 +208,7 @@ def getUser(uID):
         if request.json is not None:
             jason = request.json
         elif "json" in request.form:
-             jason = json.loads(request.form["json"])
+            jason = json.loads(request.form["json"])
         else:
             result["error"] = "no json in request"
             return jsonify(result)
@@ -234,6 +234,11 @@ def getUser(uID):
         return jsonify(result)
 
 
+@app.route("/amble/user/<string:userID>/canvases", methods=["GET"])
+def getUserCanvases(userID):
+    return jsonify({"canvases": db.get_canvases_by_user(userID)})
+
+
 # ========== LANDMARKS ==========
 
 # get or create canvas
@@ -250,6 +255,11 @@ def getLandmark(placeID):
     return jsonify(landmark)
 
 
+@app.route("/amble/landmark/<string:placeID>/canvases")
+def getLandmarkCanvases(placeID):
+    return jsonify({"canvases": db.get_canvases_by_landmark(placeID)})
+
+
 # ========== CANVASES ==========
 
 # Create Canvas
@@ -262,7 +272,7 @@ def createCanvas():
         if request.json is not None:
             jason = request.json
         elif "json" in request.form:
-             jason = json.loads(request.form["json"])
+            jason = json.loads(request.form["json"])
         else:
             result["error"] = "no json in request"
             return jsonify(result)
@@ -318,7 +328,26 @@ def getCanvas(canvasID):
     if request.method == "GET":
         return jsonify(db.get_canvas(canvasID))
     elif request.method == "PUT":
-        jason = request.form["json"]
+
+        if request.json is not None:
+            jason = request.json
+        elif "json" in request.form:
+            jason = json.loads(request.form["json"])
+        else:
+            result["error"] = "no json in request"
+            return jsonify(result)
+
+        canvas = db.get_canvas(canvasID)
+
+        if "title" in jason:
+            canvas["title"] = jason["title"]
+
+        if "description" in jason:
+            canvas["description"] = jason["description"]
+
+        if "editable" in jason:
+            canvas["editable"] = jason["editable"]
+
     else:
         result["error"] = "incorrect request method"
         return jsonify(result)
@@ -341,6 +370,51 @@ def getCanvasImage(canvasID):
         return jsonify(result)
 
 
+# ========== CANVAS RATING ==========
+@app.route("/amble/canvas/rate", methods=["PUT"])
+def rateCanvas():
+    result = {"result": "error", "error": ""}
+    if request.method == "PUT":
+        if request.json is not None:
+            jason = request.json
+        elif "json" in request.form:
+            jason = json.loads(request.form["json"])
+        else:
+            result["error"] = "no json in request"
+            return jsonify(result)
+
+        if "canvasID" not in jason:
+            result["error"] = "no canvasID in json"
+            return jsonify(result)
+        canvasID = jason["canvasID"]
+
+        if "userID" not in jason:
+            result["error"] = "no userID in json"
+            return jsonify(result)
+        userID = jason["userID"]
+
+        db.rate(canvasID, userID)
+        return {"result": "success"}
+    else:
+        jason["error"] = "invalid access method"
+        return jsonify(result)
+
+
+@app.route("/amble/canvas/<string:canvasID>/rating")
+def getCanvasRating(canvasID):
+    return jsonify(db.get_canvas_rating(canvasID))
+
+
+@app.route("/amble/canvas/<string:canvasID>/<string:userID>")
+def getCanvasUser(canvasID, userID):
+    rated = db.check_rated(canvasID, userID)
+    if rated == 1:
+        return jsonify({"liked": True})
+    else:
+        return jsonify({"liked": False})
+    return jsonify(db.get_canvas_rating(canvasID))
+
+
 # ========== COMMENTS ==========
 @app.route("/amble/comment/createComment", methods=["POST"])
 def createComment():
@@ -351,7 +425,7 @@ def createComment():
         if request.json is not None:
             jason = request.json
         elif "json" in request.form:
-             jason = json.loads(request.form["json"])
+            jason = json.loads(request.form["json"])
         else:
             result["error"] = "no json in request"
             return jsonify(result)
@@ -395,7 +469,7 @@ def getComment(commentID):
         if request.json is not None:
             jason = request.json
         elif "json" in request.form:
-             jason = json.loads(request.form["json"])
+            jason = json.loads(request.form["json"])
         else:
             result["error"] = "no json in request"
             return jsonify(result)
@@ -440,7 +514,6 @@ def before_req():
             print(request.json)
         else:
             print(request.form)
-        
 
 
 # ========== STARTUP ==========

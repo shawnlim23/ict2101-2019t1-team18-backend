@@ -16,6 +16,7 @@ CREATE TABLE user (
   `active` BOOLEAN DEFAULT 1,
   `token` VARCHAR(64),
   `temp_token` VARCHAR(64),
+  `verified` BOOLEAN DEFAULT 0,
   CONSTRAINT User_userID_PK PRIMARY KEY(userID),
   CONSTRAINT User_email_UQ UNIQUE INDEX(email)
 );
@@ -43,6 +44,7 @@ CREATE TABLE canvas_rating (
   `canvas_ratingID` INT(8) UNSIGNED AUTO_INCREMENT NOT NULL,
   `canvasID` INT(8) UNSIGNED NOT NULL,
   `userID` INT(8) UNSIGNED NOT NULL,
+  `liked` BOOLEAN DEFAULT 1,
   CONSTRAINT Canvas_Rating_canvas_ratingID_PK PRIMARY KEY(canvas_ratingID),
   CONSTRAINT Canvas_Rating_userID_FK FOREIGN KEY(userID) REFERENCES User(userID),
   CONSTRAINT Canvas_Rating_canvasID_FK FOREIGN KEY(canvasID) REFERENCES Canvas(canvasID)

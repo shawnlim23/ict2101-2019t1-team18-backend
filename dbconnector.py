@@ -395,11 +395,16 @@ def get_canvases_by_landmark(placeID):
         conn = conn_open()
         canvases = []
         with conn.cursor() as cursor:
-            sql = "SELECT canvasID FROM activeCanvases WHERE placeID = %s;"
+            sql = "SELECT * FROM activeCanvases WHERE placeID = %s;"
             if cursor.execute(sql, (placeID)) != 0:
-                result = cursor.fetchall()
-                for row in result:
-                    canvases.append(row["canvasID"])
+                canvases = cursor.fetchall()
+                for canvas in canvases:
+                    canvas["rating"] = get_canvas_rating(canvas["canvasID"])["rating"]
+                    with open(
+                        f"./static/images/canvas/{canvas['canvasID']}.png", "rb"
+                    ) as img_file:
+                        my_string = base64.b64encode(img_file.read())
+                        canvas["image"] = my_string.decode("utf-8")
 
     finally:
         conn.close()
@@ -413,8 +418,8 @@ def get_canvases_by_user(userID):
         with conn.cursor() as cursor:
             sql = "SELECT canvasID FROM activeCanvases WHERE userID = %s;"
             if cursor.execute(sql, (userID)) != 0:
-                result = cursor.fetchall()
-                for row in result:
+                canvases = cursor.fetchall()
+                for canvas in canvases:
                     canvases.append(row["canvasID"])
 
     finally:

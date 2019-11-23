@@ -8,6 +8,7 @@ import json
 import misc
 import os
 import smtp as mail
+import base64
 
 # import flask_sqlalchemy
 app = Flask(__name__)
@@ -495,7 +496,10 @@ def getCanvas(canvasID):
 def getCanvasImage(canvasID):
     result = {"result": "error", "error": ""}
     if request.method == "GET":
-        return render_template("image.html", name=(canvasID + ".png"))
+        # return render_template("image.html", name=(canvasID + ".png"))
+        with open(f"./static/images/canvas/{canvasID}.png", "rb") as img_file:
+            my_string = base64.b64encode(img_file.read())
+            return jsonify(result = {"result": "success", "image": my_string.decode('utf-8')})
 
     elif request.method == "PUT":
         file = request.files["file"]

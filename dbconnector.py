@@ -3,6 +3,7 @@ import configparser
 import pymysql.cursors
 import logging
 import classes
+import base64
 
 creds = {"host": "localhost", "user": "root", "password": "password", "db": "db"}
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -335,6 +336,11 @@ def get_canvases():
                 canvases = cursor.fetchall()
                 for canvas in canvases:
                     canvas["rating"] = get_canvas_rating(canvas["canvasID"])["rating"]
+                    with open(
+                        f"./static/images/canvas/{canvas['canvasID']}.png", "rb"
+                    ) as img_file:
+                        my_string = base64.b64encode(img_file.read())
+                        canvas["image"] = my_string.decode("utf-8")
     finally:
         conn.close()
         return canvases
@@ -349,9 +355,37 @@ def get_canvas(canvasID):
             if cursor.execute(sql, (canvasID)) != 0:
                 canvas = cursor.fetchone()
                 canvas["rating"] = get_canvas_rating(canvas["canvasID"])["rating"]
+                with open(f"./static/images/canvas/{canvasID}.png", "rb") as img_file:
+                    my_string = base64.b64encode(img_file.read())
+                canvas["image"] = my_string.decode("utf-8")
     finally:
         conn.close()
         return canvas
+
+
+def get_canvases_by_canvasIDs(canvasIDs):
+    try:
+        canvases = []
+        selector = "("
+        for canvasID in canvasIDs:
+            selector = selector + str(canvasID) + ","
+
+        selector = selector[:-1] + ")"
+        conn = conn_open()
+        with conn.cursor() as cursor:
+            sql = f"SELECT * FROM activeCanvases WHERE canvasID IN {selector};"
+            if cursor.execute(sql) != 0:
+                canvases = cursor.fetchall()
+                for canvas in canvases:
+                    canvas["rating"] = get_canvas_rating(canvas["canvasID"])["rating"]
+                    with open(
+                        f"./static/images/canvas/{canvas['canvasID']}.png", "rb"
+                    ) as img_file:
+                        my_string = base64.b64encode(img_file.read())
+                        canvas["image"] = my_string.decode("utf-8")
+    finally:
+        conn.close()
+        return canvases
 
 
 def get_canvases_by_landmark(placeID):
@@ -542,7 +576,7 @@ if __name__ == "__main__":
     # rate(1, 1)
     # print(get_canvases())
     # print(check_rated(1,1))
-
+    print(get_canvases_by_canvasIDs([1, 2]))
     # canvas = get_canvas(1)
     # update_canvas(canvas)
     pass

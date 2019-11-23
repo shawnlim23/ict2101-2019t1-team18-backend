@@ -26,12 +26,12 @@ def conn_open():
 
 
 # ========== AUTHENTICATION ==========
-def register(user):
+def register(user, verify_token):
     try:
         conn = conn_open()
         with conn.cursor() as cursor:
-            sql = "INSERT INTO `user`(`email`, `password`, `salt`, `name`, `birthdate`, `sex`, `commute_method`) VALUES (%s, %s, %s, %s, %s, %s, %s);"
-            result = cursor.execute(
+            sql = "INSERT INTO `user`(`email`, `password`, `salt`, `name`, `birthdate`, `sex`, `commute_method`, `temp_token`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);"
+            cursor.execute(
                 sql,
                 (
                     user.email,
@@ -41,8 +41,10 @@ def register(user):
                     user.birthdate,
                     user.sex,
                     user.commute_method,
+                    verify_token,
                 ),
             )
+            result = cursor.lastrowid
     finally:
         conn.commit()
         conn.close()
@@ -143,11 +145,24 @@ def get_user(userID):
         return user
 
 
+def get_user_by_email(email):
+    try:
+        conn = conn_open()
+        with conn.cursor() as cursor:
+            sql = "SELECT userID FROM user WHERE email = %s AND active = 1;"
+            cursor.execute(sql, (email))
+            userID = cursor.fetchone()
+
+    finally:
+        conn.close()
+        return userID
+
+
 def update_user(user):
     try:
         conn = conn_open()
         with conn.cursor() as cursor:
-            sql = "UPDATE `user` SET `birthdate` = %s, `commute_method` = %s, `name` = %s, `sex` = %s WHERE `userID` = %s;"
+            sql = "UPDATE `user` SET `birthdate` = %s, `commute_method` = %s, `name` = %s, `sex` = %s, `active` = %s WHERE `userID` = %s;"
             result = cursor.execute(
                 sql,
                 (
@@ -155,9 +170,76 @@ def update_user(user):
                     user["commute_method"],
                     user["name"],
                     user["sex"],
+                    user["active"],
                     user["userID"],
                 ),
             )
+    finally:
+        conn.commit()
+        conn.close()
+        return result
+
+
+def update_password(userID, password, salt):
+    try:
+        conn = conn_open()
+        with conn.cursor() as cursor:
+            sql = "UPDATE `user` SET `password` = %s, `salt` = %s, `temp_token` = NULL, WHERE `userID` = %s;"
+            result = cursor.execute(sql, (password, salt, userID))
+    finally:
+        conn.commit()
+        conn.close()
+        return result
+
+
+def check_verify_token(token):
+    try:
+        result = False
+        userID, s_token = token.split("/")
+        conn = conn_open()
+        with conn.cursor() as cursor:
+            sql = "SELECT count(userID) AS count FROM user WHERE userID = %s AND temp_token = %s;"
+            cursor.execute(sql, (userID, s_token))
+            count = cursor.fetchone()
+            if count["count"] >= 0:
+                result = True
+    finally:
+        conn.commit()
+        conn.close()
+        return result
+
+
+def update_temp_token(userID, token):
+    try:
+        conn = conn_open()
+        with conn.cursor() as cursor:
+            sql = "UPDATE `user` SET `temp_token` = %s, WHERE `userID` = %s;"
+            result = cursor.execute(sql, (token, userID))
+    finally:
+        conn.commit()
+        conn.close()
+        return result
+
+
+def verify_user(userID):
+    try:
+        conn = conn_open()
+        with conn.cursor() as cursor:
+            sql = "UPDATE user SET temp_token = NULL, verified = 1 WHERE userID = %s"
+            cursor.execute(sql, (userID))
+    finally:
+        conn.commit()
+        conn.close()
+
+
+def check_verified(userID):
+    try:
+        result = False
+        conn = conn_open()
+        with conn.cursor() as cursor:
+            sql = "SELECT verified FROM user WHERE userID = %s"
+            if cursor.execute(sql, (userID)) >= 0:
+                result = True
     finally:
         conn.commit()
         conn.close()
@@ -457,8 +539,8 @@ def check_token(uidtoken):
 
 if __name__ == "__main__":
     # print(get_canvas_rating(1))
-    #rate(1, 1)
-    #print(get_canvases())
+    # rate(1, 1)
+    # print(get_canvases())
     # print(check_rated(1,1))
 
     # canvas = get_canvas(1)

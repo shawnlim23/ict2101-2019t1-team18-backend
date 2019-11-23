@@ -16,6 +16,7 @@ CREATE TABLE user (
   `active` BOOLEAN DEFAULT 1,
   `token` VARCHAR(64),
   `temp_token` VARCHAR(64),
+  `verified` BOOLEAN DEFAULT 0,
   CONSTRAINT User_userID_PK PRIMARY KEY(userID),
   CONSTRAINT User_email_UQ UNIQUE INDEX(email)
 );

@@ -1,14 +1,13 @@
 from flask import Flask, jsonify, request, render_template
-import flask.json as fjson
-import hashlib
 from datetime import datetime
+
+import hashlib, json, os, base64
+
+# User Created Classes
 import classes
-import dbconnector as db
-import json
 import misc
-import os
 import smtp as mail
-import base64
+import dbconnector as db
 
 # import flask_sqlalchemy
 app = Flask(__name__)
@@ -99,7 +98,7 @@ def register():
         userID = db.register(user, verify_token)
 
         # send verification email
-        sent_token = f"{userID}/{verify_token}"
+        sent_token = f"{userID}-{verify_token}"
         mail.send_verify(email, sent_token)
         result = {"result": "success"}
         return jsonify(result)
@@ -157,7 +156,7 @@ def login():
         ).hexdigest()
 
         user = db.login(deets["userID"], token)
-        user["token"] = str(deets["userID"]) + "/" + token
+        user["token"] = str(deets["userID"]) + "-" + token
         return jsonify({"result": "success", "return": user})
 
     else:
@@ -200,7 +199,7 @@ def logout():
 @app.route("/amble/auth/verify/<string:token>")
 def verify(token):
     if db.check_verify_token(token):
-        db.verify_user(token.split("/")[0])
+        db.verify_user(token.split("-")[0])
         return "Account has been verified"
     else:
         return "Invalid token"
@@ -217,7 +216,7 @@ def pw_reset(token):
         return "Invalid Token"
 
     # check if userID is already verified
-    userID = token.split("/")[0]
+    userID = token.split("-")[0]
     if not db.check_verified(userID):
         return "Verify Account First"
 
@@ -230,7 +229,7 @@ def pw_reset(token):
         if (
             "newPassword" in request.form
             and "rePassword" in request.form
-            and request.form["newPassword"] == ["rePassword"]
+            and request.form["newPassword"] == request.form["rePassword"]
         ):
             # hash the password and update the password
             pwd = request.form["newPassword"]
@@ -240,11 +239,11 @@ def pw_reset(token):
             return "Password has been changed"
         else:
             return render_template(
-                "reset_password.html", error="passwords did not match"
+                "reset_password.html", error="Passwords did not match"
             )
 
 
-# resend verification email #TODO DO NOT USE
+# resend verification email
 @app.route("/amble/auth/verify/resendVerification", methods=["GET", "POST"])
 def resendVerification():
     result = {"result": "error", "error": ""}
@@ -254,27 +253,34 @@ def resendVerification():
         )
     if request.method == "POST":
         # Require json
-        if request.json is not None:
-            jason = request.json
+        # if request.json is not None:
+        #     jason = request.json
 
-        elif "json" in request.form:
-            jason = json.loads(request.form["json"])
+        # elif "json" in request.form:
+        #     jason = json.loads(request.form["json"])
 
-        else:
-            result["error"] = "no json in request"
-            return jsonify(result)
+        # else:
+        #     result["error"] = "no json in request"
+        #     return jsonify(result)
 
-        if "email" not in jason:
-            result["error"] = "no json in request"
-            return jsonify(result)
-        email = jason["email"]
+        if "email" not in request.form:
+            # result["error"] = "no email in request"
+            # return jsonify(result)
+            return render_template(
+                "enter_email.html", title="Reset Password", error="No email in request"
+            )
+        email = request.form["email"]
 
         user = db.get_user_by_email(email)
-        if user != {}:
-            send_token = hashlib.sha256((email).encode("utf-8")).hexdigest()
-            db.update_temp_token(user["userID"], send_token)
+        if user != None:
+            if db.check_verified(user["userID"]):
+                verify_token = hashlib.sha256((email).encode("utf-8")).hexdigest()
+                db.update_temp_token(user["userID"], verify_token)
 
-        return "Successfully sent email"
+                send_token = f"{str(user['userID'])}-{verify_token}"
+                mail.send_verify(email, send_token)
+
+        return "Successfully sent email!"
         # return jsonify({"result": "success"})
 
     else:
@@ -283,7 +289,7 @@ def resendVerification():
 
 
 # send reset password email
-@app.route("/amble/auth/resetPassword", methods=["GET", "POST"])
+@app.route("/amble/auth/resetpassword", methods=["GET", "POST"])
 def send_reset_pw():
     result = {"result": "error", "error": ""}
     if request.method == "GET":
@@ -292,25 +298,32 @@ def send_reset_pw():
     if request.method == "POST":
 
         # return json error
-        if request.json is not None:
-            jason = request.json
-        elif "json" in request.form:
-            jason = json.loads(request.form["json"])
-        else:
-            result["error"] = "no json in request"
-            return jsonify(result)
+        # if request.json is not None:
+        # jason = request.json
+        # elif "json" in request.form:
+        # jason = json.loads(request.form["json"])
+        # else:
+        # result["error"] = "no json in request"
+        # return jsonify(result)
 
-        if not "email" in jason:
-            result["error"] = "no email in request"
-            return jsonify(result)
-        email = jason["email"]
+        # if not "email" in jason:
+        # result["error"] = "no email in request"
+        # return jsonify(result)
+        if "email" not in request.form:
+            return render_template(
+                "enter_email.html", title="Reset Password", error="No email in request"
+            )
+        email = request.form["email"]
 
         user = db.get_user_by_email(email)
-        if user != {}:
-            send_token = hashlib.sha256((email).encode("utf-8")).hexdigest()
-            db.update_temp_token(user["userID"], send_token)
+        if user != None:
+            reset_token = hashlib.sha256((email).encode("utf-8")).hexdigest()
+            db.update_temp_token(user["userID"], reset_token)
 
-            return jsonify({"result": "success"})
+            send_token = f"{str(user['userID'])}-{reset_token}"
+            mail.send_reset(email, send_token)
+
+        return "Successfully sent email!"
 
     else:
         result["error"] = "incorrect request method"
@@ -454,9 +467,32 @@ def createCanvas():
 
 
 # getAllCanvases
-@app.route("/amble/canvases")
+@app.route("/amble/canvases", methods=["GET", "POST"])
 def getCanvases():
-    return jsonify(db.get_canvases())
+    result = {"result": "error", "error": ""}
+    if request.method == "GET":
+        return jsonify(db.get_canvases())
+
+    elif request.method == "POST":
+        if request.json is not None:
+            jason = request.json
+
+        elif "json" in request.form:
+            jason = json.loads(request.form["json"])
+
+        else:
+            result["error"] = "no json in request"
+            return jsonify(result)
+
+        if "canvasIDs" not in jason:
+            result["error"] = "no canvasID in json"
+            return jsonify(result)
+        canvasIDs = jason["canvasIDs"]
+
+        return jsonify(db.get_canvases_by_canvasIDs(canvasIDs))
+    else:
+        result["error"] = "incorrect request method"
+        return jsonify(result)
 
 
 # get a single canvas
@@ -499,7 +535,9 @@ def getCanvasImage(canvasID):
         # return render_template("image.html", name=(canvasID + ".png"))
         with open(f"./static/images/canvas/{canvasID}.png", "rb") as img_file:
             my_string = base64.b64encode(img_file.read())
-            return jsonify(result = {"result": "success", "image": my_string.decode('utf-8')})
+            return jsonify(
+                result={"result": "success", "image": my_string.decode("utf-8")}
+            )
 
     elif request.method == "PUT":
         file = request.files["file"]

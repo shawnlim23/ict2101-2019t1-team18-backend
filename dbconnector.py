@@ -2,8 +2,10 @@ import os
 import configparser
 import pymysql.cursors
 import logging
-import classes
 import base64
+
+# User Created Classes
+import classes
 
 creds = {"host": "localhost", "user": "root", "password": "password", "db": "db"}
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -65,7 +67,7 @@ def logout(uidtoken):
     if check_token(uidtoken):
         try:
 
-            userID = uidtoken.split("/")[0]
+            userID = uidtoken.split("-")[0]
             conn = conn_open()
             with conn.cursor() as cursor:
                 sql = "UPDATE user SET token = NULL WHERE userID = %s;"
@@ -185,7 +187,7 @@ def update_password(userID, password, salt):
     try:
         conn = conn_open()
         with conn.cursor() as cursor:
-            sql = "UPDATE `user` SET `password` = %s, `salt` = %s, `temp_token` = NULL, WHERE `userID` = %s;"
+            sql = "UPDATE `user` SET `password` = %s, `salt` = %s, `temp_token` = NULL WHERE `userID` = %s;"
             result = cursor.execute(sql, (password, salt, userID))
     finally:
         conn.commit()
@@ -196,13 +198,13 @@ def update_password(userID, password, salt):
 def check_verify_token(token):
     try:
         result = False
-        userID, s_token = token.split("/")
+        userID, s_token = token.split("-")
         conn = conn_open()
         with conn.cursor() as cursor:
             sql = "SELECT count(userID) AS count FROM user WHERE userID = %s AND temp_token = %s;"
             cursor.execute(sql, (userID, s_token))
             count = cursor.fetchone()
-            if count["count"] >= 0:
+            if count["count"] > 0:
                 result = True
     finally:
         conn.commit()
@@ -214,7 +216,7 @@ def update_temp_token(userID, token):
     try:
         conn = conn_open()
         with conn.cursor() as cursor:
-            sql = "UPDATE `user` SET `temp_token` = %s, WHERE `userID` = %s;"
+            sql = "UPDATE `user` SET `temp_token` = %s WHERE `userID` = %s;"
             result = cursor.execute(sql, (token, userID))
     finally:
         conn.commit()
@@ -443,7 +445,7 @@ def update_canvas(canvas):
 # ========== CANVAS RATING ==========
 def get_canvas_rating(canvasID):
     try:
-        result = {"rating":0}
+        result = {"rating": 0}
         conn = conn_open()
         with conn.cursor() as cursor:
             sql = "SELECT rating FROM countRating WHERE canvasID = %s;"
@@ -555,7 +557,7 @@ def add_token(userID, token):
 
 def check_token(uidtoken):
     result = False
-    userID, token = uidtoken.split("/")
+    userID, token = uidtoken.split("-")
     try:
         conn = conn_open()
         with conn.cursor() as cursor:
@@ -572,12 +574,4 @@ def check_token(uidtoken):
 
 
 if __name__ == "__main__":
-    # print(get_canvas_rating(1))
-    # rate(1, 1)
-    # print(get_canvases())
-    # print(check_rated(1,1))
-    #print(get_canvases_by_canvasIDs([1, 2]))
-    # canvas = get_canvas(1)
-    # update_canvas(canvas)
-    print(get_canvases())
     pass

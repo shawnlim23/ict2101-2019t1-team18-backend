@@ -441,7 +441,7 @@ def createCanvas():
         placeID = jason["placeID"]
 
         # check if file is in requests
-        if "file" not in request.files:
+        if "file" not in request.files or "file" not in jason:
             result["error"] = "invalid file"
             return jsonify(result)
 
@@ -457,8 +457,12 @@ def createCanvas():
             canvas.editable = jason["editable"]
 
         canvasID = db.create_canvas(canvas)
-        file = request.files["file"]
-        file.save(os.path.join("./static/images/canvas/", str(canvasID) + ".png"))
+        # file = ["file"]
+        # file.save(os.path.join("./static/images/canvas/", str(canvasID) + ".png"))
+        filename = f"{canvasID}.png"
+        file = base64.b64decode(jason["file"])
+        with open(filename) as f:
+            f.write(file)
 
         return jsonify(db.get_canvas(str(canvasID)))
     else:
@@ -540,8 +544,27 @@ def getCanvasImage(canvasID):
             )
 
     elif request.method == "PUT":
-        file = request.files["file"]
-        file.save(os.path.join("./static/images/canvas", canvasID + ".png"))
+        # file = request.files["file"]
+        # file.save(os.path.join("./static/images/canvas", canvasID + ".png"))
+        if request.json is not None:
+            jason = request.json
+
+        elif "json" in request.form:
+            jason = json.loads(request.form["json"])
+
+        else:
+            result["error"] = "no json in request"
+            return jsonify(result)
+
+        if "file" not in jason:
+            result["error"] = "no file"
+            return jsonify(result)
+
+        filename = f"{canvasID}.png"
+        file = base64.b64decode(jason["file"])
+        with open(filename) as f:
+            f.write(file)
+
         return jsonify({"result": "success"})
 
     else:

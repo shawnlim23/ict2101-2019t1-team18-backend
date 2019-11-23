@@ -7,6 +7,7 @@ import dbconnector as db
 import json
 import misc
 import os
+import smtp as mail
 
 # import flask_sqlalchemy
 app = Flask(__name__)
@@ -44,7 +45,7 @@ def register():
         if request.json is not None:
             jason = request.json
         elif "json" in request.form:
-             jason = json.loads(request.form["json"])
+            jason = json.loads(request.form["json"])
         else:
             result["error"] = "no json in request"
             return jsonify(result)
@@ -90,11 +91,17 @@ def register():
         if "commute_method" in jason:
             user.commute_method = jason["commute_method"]
 
+        # get temp token for verification
+        verify_token = hashlib.sha256((salt).encode("utf-8")).hexdigest()
+
         # Register User & submit
-        db.register(user)
+        userID = db.register(user, verify_token)
+
+        # send verification email
+        sent_token = f"{userID}/{verify_token}"
+        mail.send_verify(email, sent_token)
         result = {"result": "success"}
         return jsonify(result)
-
     else:
         result["error"] = "incorrect request method"
         return jsonify(result)
@@ -110,7 +117,7 @@ def login():
         if request.json is not None:
             jason = request.json
         elif "json" in request.form:
-             jason = json.loads(request.form["json"])
+            jason = json.loads(request.form["json"])
         else:
             result["error"] = "no json in request"
             return jsonify(result)
@@ -139,6 +146,10 @@ def login():
             result["error"] = "incorrect email/password"
             return jsonify(result)
 
+        if not db.check_verified(deets["userID"]):
+            result["error"] = "acconut not verified"
+            return jsonify(result)
+
         # generate token and return user w/ token
         token = hashlib.sha256(
             datetime.now().strftime("%Y-%b-%a %H:%M:%S").encode("utf-8")
@@ -163,7 +174,7 @@ def logout():
         if request.json is not None:
             jason = request.json
         elif "json" in request.form:
-             jason = json.loads(request.form["json"])
+            jason = json.loads(request.form["json"])
         else:
             result["error"] = "no json in request"
             return jsonify(result)
@@ -184,6 +195,127 @@ def logout():
         return jsonify(result)
 
 
+# verify user
+@app.route("/amble/auth/verify/<string:token>")
+def verify(token):
+    if db.check_verify_token(token):
+        db.verify_user(token.split("/")[0])
+        return "Account has been verified"
+    else:
+        return "Invalid token"
+
+
+# reset password
+@app.route("/amble/auth/reset/<string:token>", methods=["GET", "POST"])
+def pw_reset(token):
+    # check if token exists
+    try:
+        if not db.check_verify_token(token):
+            return "Invalid Token"
+    except Exception:
+        return "Invalid Token"
+
+    # check if userID is already verified
+    userID = token.split("/")[0]
+    if not db.check_verified(userID):
+        return "Verify Account First"
+
+    # if method is get send reset password page
+    if request.method == "GET":
+        return render_template("reset_password.html", error="")
+
+    elif request.method == "POST":
+        # if both passwords are inside form and are the same return success
+        if (
+            "newPassword" in request.form
+            and "rePassword" in request.form
+            and request.form["newPassword"] == ["rePassword"]
+        ):
+            # hash the password and update the password
+            pwd = request.form["newPassword"]
+            salt = datetime.now().strftime("%Y-%b-%a %H:%M:%S")
+            password = hashlib.sha256((pwd + salt).encode("utf-8")).hexdigest()
+            db.update_password(userID, password, salt)
+            return "Password has been changed"
+        else:
+            return render_template(
+                "reset_password.html", error="passwords did not match"
+            )
+
+
+# resend verification email #TODO DO NOT USE
+@app.route("/amble/auth/verify/resendVerification", methods=["GET", "POST"])
+def resendVerification():
+    result = {"result": "error", "error": ""}
+    if request.method == "GET":
+        return render_template(
+            "enter_email.html", title="Resend Verification Email", error=""
+        )
+    if request.method == "POST":
+        # Require json
+        if request.json is not None:
+            jason = request.json
+
+        elif "json" in request.form:
+            jason = json.loads(request.form["json"])
+
+        else:
+            result["error"] = "no json in request"
+            return jsonify(result)
+
+        if "email" not in jason:
+            result["error"] = "no json in request"
+            return jsonify(result)
+        email = jason["email"]
+
+        user = db.get_user_by_email(email)
+        if user != {}:
+            send_token = hashlib.sha256((email).encode("utf-8")).hexdigest()
+            db.update_temp_token(user["userID"], send_token)
+
+        return "Successfully sent email"
+        # return jsonify({"result": "success"})
+
+    else:
+        result["error"] = "incorrect request method"
+        return jsonify(result)
+
+
+# send reset password email
+@app.route("/amble/auth/resetPassword", methods=["GET", "POST"])
+def send_reset_pw():
+    result = {"result": "error", "error": ""}
+    if request.method == "GET":
+        return render_template("enter_email.html", title="Reset Password", error="")
+
+    if request.method == "POST":
+
+        # return json error
+        if request.json is not None:
+            jason = request.json
+        elif "json" in request.form:
+            jason = json.loads(request.form["json"])
+        else:
+            result["error"] = "no json in request"
+            return jsonify(result)
+
+        if not "email" in jason:
+            result["error"] = "no email in request"
+            return jsonify(result)
+        email = jason["email"]
+
+        user = db.get_user_by_email(email)
+        if user != {}:
+            send_token = hashlib.sha256((email).encode("utf-8")).hexdigest()
+            db.update_temp_token(user["userID"], send_token)
+
+            return jsonify({"result": "success"})
+
+    else:
+        result["error"] = "incorrect request method"
+        return jsonify(result)
+
+
 # ========== USERS ==========
 
 # get all users
@@ -192,7 +324,7 @@ def getUsers():
     return jsonify(db.get_users())
 
 
-# get one user
+# get one user/update user
 @app.route("/amble/user/<string:uID>", methods=["GET", "PUT"])
 def getUser(uID):
     result = {"result": "error", "error": ""}
@@ -208,7 +340,7 @@ def getUser(uID):
         if request.json is not None:
             jason = request.json
         elif "json" in request.form:
-             jason = json.loads(request.form["json"])
+            jason = json.loads(request.form["json"])
         else:
             result["error"] = "no json in request"
             return jsonify(result)
@@ -225,6 +357,11 @@ def getUser(uID):
 
         if "sex" in jason:
             user["sex"] = jason["sex"]
+
+        user["active"] = True
+        if "active" in jason:
+            user["active"] = jason["active"]
+
         # update the stored database with userdata
         db.update_user(user)
         return jsonify(db.get_user(uID))
@@ -232,6 +369,11 @@ def getUser(uID):
     else:
         result["error"] = "incorrect request method"
         return jsonify(result)
+
+
+@app.route("/amble/user/<string:userID>/canvases", methods=["GET"])
+def getUserCanvases(userID):
+    return jsonify({"canvases": db.get_canvases_by_user(userID)})
 
 
 # ========== LANDMARKS ==========
@@ -250,6 +392,11 @@ def getLandmark(placeID):
     return jsonify(landmark)
 
 
+@app.route("/amble/landmark/<string:placeID>/canvases")
+def getLandmarkCanvases(placeID):
+    return jsonify({"canvases": db.get_canvases_by_landmark(placeID)})
+
+
 # ========== CANVASES ==========
 
 # Create Canvas
@@ -262,7 +409,7 @@ def createCanvas():
         if request.json is not None:
             jason = request.json
         elif "json" in request.form:
-             jason = json.loads(request.form["json"])
+            jason = json.loads(request.form["json"])
         else:
             result["error"] = "no json in request"
             return jsonify(result)
@@ -318,7 +465,26 @@ def getCanvas(canvasID):
     if request.method == "GET":
         return jsonify(db.get_canvas(canvasID))
     elif request.method == "PUT":
-        jason = request.form["json"]
+
+        if request.json is not None:
+            jason = request.json
+        elif "json" in request.form:
+            jason = json.loads(request.form["json"])
+        else:
+            result["error"] = "no json in request"
+            return jsonify(result)
+
+        canvas = db.get_canvas(canvasID)
+
+        if "title" in jason:
+            canvas["title"] = jason["title"]
+
+        if "description" in jason:
+            canvas["description"] = jason["description"]
+
+        if "editable" in jason:
+            canvas["editable"] = jason["editable"]
+
     else:
         result["error"] = "incorrect request method"
         return jsonify(result)
@@ -329,16 +495,63 @@ def getCanvas(canvasID):
 def getCanvasImage(canvasID):
     result = {"result": "error", "error": ""}
     if request.method == "GET":
-        render = render_template("image.html", name=(canvasID + ".png"))
+        return render_template("image.html", name=(canvasID + ".png"))
 
-        return render
     elif request.method == "PUT":
         file = request.files["file"]
         file.save(os.path.join("./static/images/canvas", canvasID + ".png"))
         return jsonify({"result": "success"})
+
     else:
         result["error"] = "incorrect request method"
         return jsonify(result)
+
+
+# ========== CANVAS RATING ==========
+@app.route("/amble/canvas/rate", methods=["PUT"])
+def rateCanvas():
+    result = {"result": "error", "error": ""}
+    if request.method == "PUT":
+        if request.json is not None:
+            jason = request.json
+
+        elif "json" in request.form:
+            jason = json.loads(request.form["json"])
+
+        else:
+            result["error"] = "no json in request"
+            return jsonify(result)
+
+        if "canvasID" not in jason:
+            result["error"] = "no canvasID in json"
+            return jsonify(result)
+        canvasID = jason["canvasID"]
+
+        if "userID" not in jason:
+            result["error"] = "no userID in json"
+            return jsonify(result)
+        userID = jason["userID"]
+
+        db.rate(canvasID, userID)
+        return {"result": "success"}
+    else:
+        jason["error"] = "invalid access method"
+        return jsonify(result)
+
+
+@app.route("/amble/canvas/<string:canvasID>/rating")
+def getCanvasRating(canvasID):
+    return jsonify(db.get_canvas_rating(canvasID))
+
+
+@app.route("/amble/canvas/<string:canvasID>/<string:userID>")
+def getCanvasUser(canvasID, userID):
+    rated = db.check_rated(canvasID, userID)
+    if rated == 1:
+        return jsonify({"liked": True})
+    else:
+        return jsonify({"liked": False})
+    return jsonify(db.get_canvas_rating(canvasID))
 
 
 # ========== COMMENTS ==========
@@ -351,7 +564,7 @@ def createComment():
         if request.json is not None:
             jason = request.json
         elif "json" in request.form:
-             jason = json.loads(request.form["json"])
+            jason = json.loads(request.form["json"])
         else:
             result["error"] = "no json in request"
             return jsonify(result)
@@ -395,7 +608,7 @@ def getComment(commentID):
         if request.json is not None:
             jason = request.json
         elif "json" in request.form:
-             jason = json.loads(request.form["json"])
+            jason = json.loads(request.form["json"])
         else:
             result["error"] = "no json in request"
             return jsonify(result)
@@ -440,7 +653,6 @@ def before_req():
             print(request.json)
         else:
             print(request.form)
-        
 
 
 # ========== STARTUP ==========

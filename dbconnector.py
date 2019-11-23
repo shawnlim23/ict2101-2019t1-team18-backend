@@ -443,7 +443,7 @@ def update_canvas(canvas):
 # ========== CANVAS RATING ==========
 def get_canvas_rating(canvasID):
     try:
-        result = -1
+        result = {"rating":0}
         conn = conn_open()
         with conn.cursor() as cursor:
             sql = "SELECT rating FROM countRating WHERE canvasID = %s;"
@@ -576,7 +576,8 @@ if __name__ == "__main__":
     # rate(1, 1)
     # print(get_canvases())
     # print(check_rated(1,1))
-    print(get_canvases_by_canvasIDs([1, 2]))
+    #print(get_canvases_by_canvasIDs([1, 2]))
     # canvas = get_canvas(1)
     # update_canvas(canvas)
+    print(get_canvases())
     pass

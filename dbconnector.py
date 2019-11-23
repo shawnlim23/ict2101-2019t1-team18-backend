@@ -418,8 +418,8 @@ def get_canvases_by_user(userID):
         with conn.cursor() as cursor:
             sql = "SELECT canvasID FROM activeCanvases WHERE userID = %s;"
             if cursor.execute(sql, (userID)) != 0:
-                result = cursor.fetchall()
-                for row in result:
+                canvases = cursor.fetchall()
+                for canvas in canvases:
                     canvases.append(row["canvasID"])
 
     finally:

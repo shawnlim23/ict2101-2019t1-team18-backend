@@ -459,9 +459,9 @@ def createCanvas():
         canvasID = db.create_canvas(canvas)
         # file = ["file"]
         # file.save(os.path.join("./static/images/canvas/", str(canvasID) + ".png"))
-        filename = f"{canvasID}.png"
+        filename = f"./static/images/canvas/{canvasID}.png"
         file = base64.b64decode(jason["file"])
-        with open(filename) as f:
+        with open(filename, "wb") as f:
             f.write(file)
 
         return jsonify(db.get_canvas(str(canvasID)))
@@ -559,10 +559,9 @@ def getCanvasImage(canvasID):
         if "file" not in jason:
             result["error"] = "no file"
             return jsonify(result)
-
-        filename = f"{canvasID}.png"
+        filename = f"./static/images/canvas/{canvasID}.png"
         file = base64.b64decode(jason["file"])
-        with open(filename) as f:
+        with open(filename, "wb") as f:
             f.write(file)
 
         return jsonify({"result": "success"})

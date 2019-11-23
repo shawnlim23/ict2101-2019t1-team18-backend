@@ -113,5 +113,4 @@ def send_reset(receiver_email, token):
 
 
 if __name__ == "__main__":
-    send_reset("amirulamin.mohdosman@gmail.com", "12345")
     pass

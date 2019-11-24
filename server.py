@@ -618,6 +618,11 @@ def getCanvasUser(canvasID, userID):
     return jsonify(db.get_canvas_rating(canvasID))
 
 
+@app.route("/amble/canvas/top")
+def topCanvases():
+    return jsonify(db.top_canvases())
+
+
 # ========== COMMENTS ==========
 @app.route("/amble/comment/createComment", methods=["POST"])
 def createComment():

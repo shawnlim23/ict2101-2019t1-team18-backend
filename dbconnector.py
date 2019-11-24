@@ -430,7 +430,17 @@ def get_canvases_by_user(userID):
     finally:
         conn.close()
         return canvases
-
+        
+def top_canvases():
+    try:
+        conn = conn_open()
+        with conn.cursor() as cursor:
+            sql = "SELECT * FROM countRating ORDER BY rating LIMIT 5"
+            if cursor.execute(sql) != 0:
+                result = cursor.fetchall()
+    finally:
+        conn.close()
+        return result
 
 def update_canvas(canvas):
     try:

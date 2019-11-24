@@ -48,4 +48,5 @@ SELECT
   COUNT(canvas_ratingID) AS rating
 FROM canvas_rating
 WHERE
-  liked = 1;
+  liked = 1
+GROUP BY canvasID;

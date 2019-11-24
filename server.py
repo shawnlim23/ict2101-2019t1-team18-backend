@@ -441,7 +441,7 @@ def createCanvas():
         placeID = jason["placeID"]
 
         # check if file is in requests
-        if "file" not in request.files or "file" not in jason:
+        if "file" not in jason:
             result["error"] = "invalid file"
             return jsonify(result)
 

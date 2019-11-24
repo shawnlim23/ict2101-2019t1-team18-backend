@@ -438,6 +438,11 @@ def top_canvases():
             sql = "SELECT * FROM countRating ORDER BY rating LIMIT 5"
             if cursor.execute(sql) != 0:
                 result = cursor.fetchall()
+                for canvas in result:
+                    canvasID = canvas["canvasID"]
+                    with open(f"./static/images/canvas/{canvasID}.png", "rb") as img_file:
+                        my_string = base64.b64encode(img_file.read())
+                        canvas["image"] = my_string.decode("utf-8")
     finally:
         conn.close()
         return result

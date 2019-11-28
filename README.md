@@ -12,8 +12,8 @@ Using Python3 w/ Flask and pymysql
 ### Required Python Packages
 [Flask](https://pypi.org/project/Flask/)  
 [PyMySQL](https://pypi.org/project/PyMySQL/)  
-or use the below code in a terminal
-pip install -r requirements.txt
+or use the below code in a terminal  
+`pip install -r requirements.txt`
   
 ## Setup
 ### Setting up MariaDB (Also works with MySQL)  
@@ -33,7 +33,7 @@ pip install -r requirements.txt
 ## Enabling access
 1) Ensure ports 5000(Flask server), and 3306(SQL server) are allowed through the firewall
 2) For remote access, ensure those ports are also port forwarded correctly through the network gateway
-An active server url can be found in the documentation  
+An active server URL can be found in the documentation  
 
 # Documentation
 [API Documentation](https://docs.google.com/document/d/1YnJoDLhQgFwOwnHlbMjkgAQh_Wkc6BzzvwpF8y2Znd0/edit?usp=sharing)
